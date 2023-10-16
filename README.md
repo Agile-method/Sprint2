@@ -108,3 +108,110 @@ for line in lines:
             'child': [],
             'spouse': [],
         }
+
+        name_match = name_pattern.match(line)
+    if name_match and current_individual:
+        current_individual['name'] = name_match.group(1)
+
+    gender_match = gender_pattern.match(line)
+    if gender_match and current_individual:
+        current_individual['gender'] = 'Male' if gender_match.group(1) == 'M' else 'Female'
+
+    birthday_match = birthday_pattern.match(line)
+    if birthday_match and current_individual:
+        current_individual['birthday'] = birthday_match.group(1)
+        current_individual['age'] = calculate_age(birthday_match.group(1))
+
+    death_match = death_pattern.match(line)
+    if death_match and current_individual:
+        current_individual['alive'] = False
+        current_individual['death'] = death_match.group(1)
+
+    family_child_match = family_child_pattern.match(line)
+    if family_child_match and current_individual:
+        current_individual['child'].append(family_child_match.group(1))
+
+    family_spouse_match = family_spouse_pattern.match(line)
+    if family_spouse_match and current_individual:
+        current_individual['spouse'].append(family_spouse_match.group(1))
+
+    family_match = family_pattern.match(line)
+    if family_match:
+        if current_family:
+            families[current_family['identifier']] = current_family
+        current_family = {
+            'identifier': family_match.group(1),
+            'marriage_date': None,
+            'divorce_date': None,
+            'husband_id': None,
+            'husband_name': None,
+            'wife_id': None,
+            'wife_name': None,
+            'children': [],
+        }
+
+    marriage_match = marriage_pattern.match(line)
+    if marriage_match and current_family:
+        current_family['marriage_date'] = marriage_match.group(1)
+
+    divorce_match = divorce_pattern.match(line)
+    if divorce_match and current_family:
+        current_family['divorce_date'] = divorce_match.group(1)
+
+    husband_match = husband_pattern.match(line)
+    if husband_match and current_family:
+        current_family['husband_id'] = husband_match.group(1)
+        current_family['husband_name'] = individuals.get(husband_match.group(1), {}).get('name', 'Unknown')
+
+    wife_match = wife_pattern.match(line)
+    if wife_match and current_family:
+        current_family['wife_id'] = wife_match.group(1)
+        current_family['wife_name'] = individuals.get(wife_match.group(1), {}).get('name', 'Unknown')
+
+    child_match = child_pattern.match(line)
+    if child_match and current_family:
+        current_family['children'].append(child_match.group(1))
+
+# Create PrettyTable for individuals
+individual_table = PrettyTable()
+individual_table.field_names = ["Identifier", "Name", "Gender", "Birthday", "Age", "Alive", "Death", "Child", "Spouse"]
+
+for identifier, data in sorted(individuals.items(), key=lambda x: int(x[0])):
+    individual_table.add_row([
+        data['identifier'],
+        data['name'],
+        data['gender'],
+        data['birthday'],
+        data['age'],
+        "Yes" if data['alive'] else "No",
+        data['death'] if not data['alive'] else "",
+        ", ".join(data['child']),
+        ", ".join(data['spouse'])
+    ])
+
+# Create PrettyTable for families
+family_table = PrettyTable()
+family_table.field_names = ["Family Identifier", "Married", "Divorced", "Husband ID", "Husband Name", "Wife ID",
+                            "Wife Name", "Children"]
+
+for identifier, data in sorted(families.items(), key=lambda x: int(x[0])):
+    family_table.add_row([
+        data['identifier'],
+        data['marriage_date'],
+        data['divorce_date'],
+        data['husband_id'],
+        data['husband_name'],
+        data['wife_id'],
+        ", ".join(data['children'])
+    ])
+
+# Display tables
+print("Individuals Table:")
+print(individual_table)
+
+print("\nFamilies Table:")
+print(family_table)
+
+if __name__ == '__main__':
+    unittest.main()
+
